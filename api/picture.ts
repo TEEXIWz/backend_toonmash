@@ -71,3 +71,16 @@ router.post("/", async (req, res) => {
     }
   );
 });
+
+router.delete("/:id", (req, res) => {
+  let id = +req.params.id;
+  conn.query("DELETE FROM `picture` WHERE pid = ?",[id] ,(err, result) => {
+    if (err) {
+      res.status(500).json(err);
+    }else {
+      res.status(200).json({
+        affected_row: result.affectedRows,
+      });
+    }
+  });
+});
