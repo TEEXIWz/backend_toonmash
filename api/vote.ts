@@ -37,7 +37,44 @@ router.get('/total', (req, res)=>{
 router.get('/date', (req, res)=>{
     if (req.query.id) {
         // conn.query('SELECT pid,SUM(score) as totalScore,dates.fulldate FROM dates LEFT JOIN vote ON dates.fulldate = vote.voted_at WHERE pid = ? and dates.fulldate BETWEEN adddate(now(),-7) and now() GROUP BY DATE(voted_at) ORDER BY DATE(voted_at) desc',req.query.id, (err,result)=>{
-        conn.query('SELECT pid,1000+SUM(CASE WHEN v.winner = pid THEN v.scoreWin ELSE 0 END)+SUM(CASE WHEN v.loser = pid THEN v.scoreLose ELSE 0 END) as totalScore,DATE(voted_at) as date FROM picture LEFT JOIN vote v ON (v.winner = pid OR v.loser = pid) WHERE pid = ? and voted_at BETWEEN DATE_SUB(NOW(),INTERVAL 7 DAY) and now() GROUP BY DATE(voted_at) ORDER BY DATE(voted_at) desc',req.query.id, (err,result)=>{
+        conn.query('SELECT pid,SUM(CASE WHEN winner = pid THEN scoreWin ELSE 0 END) as scoreWin,SUM(CASE WHEN loser = pid THEN scoreLose ELSE 0 END) as scoreLose,SUM(CASE WHEN winner = pid THEN scoreWin ELSE 0 END)'+
+        '+SUM(CASE WHEN loser = pid THEN scoreLose ELSE 0 END) as totalScore,DATE(voted_at) as date'+
+        ' FROM picture LEFT JOIN vote ON (winner = pid OR loser = pid) WHERE pid = ? and '+
+        'voted_at BETWEEN DATE_SUB(NOW(),INTERVAL 7 DAY) and now() GROUP BY DATE(voted_at) ORDER BY DATE(voted_at)',req.query.id, (err,result)=>{
+            if (err) {
+                res.status(500).json(err)
+            }
+            if (result.length) {
+                res.json(result)
+            }else{
+                res.status(204).json()
+            }
+        })
+    }
+});
+
+// router.get('/scoredate', (req, res)=>{
+//     if (req.query.id) {
+//         // conn.query('SELECT pid,SUM(score) as totalScore,dates.fulldate FROM dates LEFT JOIN vote ON dates.fulldate = vote.voted_at WHERE pid = ? and dates.fulldate BETWEEN adddate(now(),-7) and now() GROUP BY DATE(voted_at) ORDER BY DATE(voted_at) desc',req.query.id, (err,result)=>{
+//         conn.query('SELECT pid,SUM(CASE WHEN winner = pid THEN scoreWin ELSE 0 END) as scoreWin,SUM(CASE WHEN loser = pid THEN scoreLose ELSE 0 END) as scoreLose,DATE(voted_at) as date'+
+//         ' FROM picture LEFT JOIN vote ON (winner = pid OR loser = pid) WHERE pid = ? AND '+
+//         'voted_at BETWEEN DATE_SUB(NOW(),INTERVAL 7 DAY) and now() GROUP BY DATE(voted_at) ORDER BY DATE(voted_at)',[req.query.id,req.query.id], (err,result)=>{
+//             if (err) {
+//                 res.status(500).json(err)
+//             }
+//             if (result.length) {
+//                 res.json(result)
+//             }else{
+//                 res.status(204).json()
+//             }
+//         })
+//     }
+// });
+
+router.get('/rank', (req, res)=>{
+    if (req.query.id) {
+        // conn.query('SELECT pid,SUM(score) as totalScore,dates.fulldate FROM dates LEFT JOIN vote ON dates.fulldate = vote.voted_at WHERE pid = ? and dates.fulldate BETWEEN adddate(now(),-7) and now() GROUP BY DATE(voted_at) ORDER BY DATE(voted_at) desc',req.query.id, (err,result)=>{
+        conn.query('SELECT ROW_NUMBER() OVER(ORDER BY totalScore desc) as rank,picture.*,1000+SUM(CASE WHEN v.winner = pid THEN v.scoreWin ELSE 0 END)+SUM(CASE WHEN v.loser = pid THEN v.scoreLose ELSE 0 END) as totalScore FROM ((picture LEFT JOIN vote v ON (v.winner = pid OR v.loser = pid)) INNER JOIN user ON picture.user_id = user.uid) GROUP BY picture.pid ORDER BY totalScore desc,created_at',req.query.id, (err,result)=>{
             if (err) {
                 res.status(500).json(err)
             }
