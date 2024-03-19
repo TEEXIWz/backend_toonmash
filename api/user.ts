@@ -54,26 +54,49 @@ router.get("/", (req, res) => {
 
 router.post("/", async (req, res) => {
   const user: UserPostRequest = req.body;
-
-  const hashPwd = await bcrypt.hash(user.password, 10);
-  let sql =
-    "INSERT INTO user (username, name, password, img, type) VALUES (?,?,?,?,?)";
-  sql = mysql.format(sql, [
+  conn.query(
+    "SELECT * FROM user WHERE username = ?",
     user.username,
-    user.name,
-    hashPwd,
-    user.img,
-    user.type,
-  ]);
-  conn.query(sql, (err, result) => {
-    if (err) {
-      res.status(400).json(err);
-    } else {
-      res
-        .status(201)
-        .json({ affected_row: result.affectedRows, last_idx: result.insertId });
+    async (err, result) => {
+      if (err) {
+        res.status(500).json(err);
+      }
+      if (result.length) {
+        res.status(409).json();
+      } else {
+        const hashPwd = await bcrypt.hash(user.password, 10);
+        let sql =
+          "INSERT INTO user (username, name, password, img, type) VALUES (?,?,?,?,?)";
+        sql = mysql.format(sql, [
+          user.username,
+          user.name,
+          hashPwd,
+          user.img,
+          user.type,
+        ]);
+        conn.query(sql, (err, result) => {
+          if (err) {
+            res.status(400).json(err);
+          } else {
+            conn.query(
+              "SELECT * FROM user WHERE uid = ?",
+              result.insertId,
+              (err, result) => {
+                if (err) {
+                  res.status(500).json(err);
+                }
+                if (result.length) {
+                  res.status(201).json(result[0]);
+                } else {
+                  res.status(204).json();
+                }
+              }
+            );
+          }
+        });
+      }
     }
-  });
+  );
 });
 
 router.put("/:id", async (req, res) => {
@@ -88,12 +111,13 @@ router.put("/:id", async (req, res) => {
   userOriginal = rawData[0] as UserPostRequest;
 
   let updateUser = { ...userOriginal, ...user };
+  const hashPwd = await bcrypt.hash(updateUser.password, 10);
 
   sql = "update user set username=?, name=?, password=?, img=? where uid=?";
   sql = mysql.format(sql, [
     updateUser.username,
     updateUser.name,
-    updateUser.password,
+    hashPwd,
     updateUser.img,
     id,
   ]);
