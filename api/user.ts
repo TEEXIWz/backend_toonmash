@@ -104,20 +104,20 @@ router.put("/:id", async (req, res) => {
   let user: UserPostRequest = req.body;
   let userOriginal: UserPostRequest | undefined;
   const queryAsync = util.promisify(conn.query).bind(conn);
-
+  user.password = await bcrypt.hash(user.password, 10);
   let sql = mysql.format("select * from user where uid = ?", [id]);
   let result = await queryAsync(sql);
   const rawData = JSON.parse(JSON.stringify(result));
   userOriginal = rawData[0] as UserPostRequest;
 
   let updateUser = { ...userOriginal, ...user };
-  const hashPwd = await bcrypt.hash(updateUser.password, 10);
+  // const hashPwd = await bcrypt.hash(updateUser.password, 10);
 
   sql = "update user set username=?, name=?, password=?, img=? where uid=?";
   sql = mysql.format(sql, [
     updateUser.username,
     updateUser.name,
-    hashPwd,
+    updateUser.password,
     updateUser.img,
     id,
   ]);
