@@ -104,7 +104,9 @@ router.put("/:id", async (req, res) => {
   let user: UserPostRequest = req.body;
   let userOriginal: UserPostRequest | undefined;
   const queryAsync = util.promisify(conn.query).bind(conn);
-  user.password = await bcrypt.hash(user.password, 10);
+  if (user.password) {
+    user.password = await bcrypt.hash(user.password, 10);
+  }
   let sql = mysql.format("select * from user where uid = ?", [id]);
   let result = await queryAsync(sql);
   const rawData = JSON.parse(JSON.stringify(result));
