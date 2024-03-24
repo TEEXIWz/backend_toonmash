@@ -7,7 +7,12 @@ export const router = express.Router();
 
 router.get('/', (req, res)=>{
     if (req.query.id) {
-        conn.query('SELECT user.name,picture.*,1000+SUM(CASE WHEN v.winner = pid THEN v.scoreWin ELSE 0 END)+SUM(CASE WHEN v.loser = pid THEN v.scoreLose ELSE 0 END) as totalScore FROM ((picture LEFT JOIN vote v ON (v.winner = pid OR v.loser = pid)) INNER JOIN user ON picture.user_id = user.uid) WHERE picture.pid = ? GROUP BY picture.pid',req.query.id, (err,result)=>{
+        conn.query(`SELECT user.name,
+                      picture.*,1000+SUM(CASE WHEN v.winner = pid THEN v.scoreWin ELSE 0 END)+SUM(CASE WHEN v.loser = pid THEN v.scoreLose ELSE 0 END) as totalScore 
+                    FROM ((picture LEFT JOIN vote v ON (v.winner = pid OR v.loser = pid)) 
+                    INNER JOIN user ON picture.user_id = user.uid) 
+                    WHERE picture.pid = ? 
+                    GROUP BY picture.pid`,req.query.id, (err,result)=>{
             if (err) {
                 res.status(500).json(err)
             }
@@ -18,7 +23,13 @@ router.get('/', (req, res)=>{
             }
         })
     }else if (req.query.uid) {
-        conn.query('SELECT user.name,picture.*,1000+SUM(CASE WHEN v.winner = pid THEN v.scoreWin ELSE 0 END)+SUM(CASE WHEN v.loser = pid THEN v.scoreLose ELSE 0 END) as totalScore FROM ((picture LEFT JOIN vote v ON (v.winner = pid OR v.loser = pid)) INNER JOIN user ON picture.user_id = user.uid) WHERE picture.user_id = ? GROUP BY picture.pid',req.query.uid, (err,result)=>{
+        conn.query(`SELECT user.name,
+                      picture.*,
+                      1000+SUM(CASE WHEN v.winner = pid THEN v.scoreWin ELSE 0 END)+SUM(CASE WHEN v.loser = pid THEN v.scoreLose ELSE 0 END) as totalScore 
+                    FROM ((picture LEFT JOIN vote v ON (v.winner = pid OR v.loser = pid)) 
+                    INNER JOIN user ON picture.user_id = user.uid) 
+                    WHERE picture.user_id = ? 
+                    GROUP BY picture.pid`,req.query.uid, (err,result)=>{
             if (err) {
                 res.status(500).json(err)
             }
@@ -29,7 +40,13 @@ router.get('/', (req, res)=>{
             }
         })
     }else{
-        conn.query('SELECT user.name,picture.*,1000+SUM(CASE WHEN v.winner = pid THEN v.scoreWin ELSE 0 END)+SUM(CASE WHEN v.loser = pid THEN v.scoreLose ELSE 0 END) as totalScore FROM ((picture LEFT JOIN vote v ON (v.winner = pid OR v.loser = pid)) INNER JOIN user ON picture.user_id = user.uid) GROUP BY picture.pid ORDER BY totalScore desc,created_at', (err,result)=>{
+        conn.query(`SELECT user.name,
+                      picture.*,
+                      1000+SUM(CASE WHEN v.winner = pid THEN v.scoreWin ELSE 0 END)+SUM(CASE WHEN v.loser = pid THEN v.scoreLose ELSE 0 END) as totalScore 
+                    FROM ((picture LEFT JOIN vote v ON (v.winner = pid OR v.loser = pid)) 
+                    INNER JOIN user ON picture.user_id = user.uid) 
+                    GROUP BY picture.pid 
+                    ORDER BY totalScore desc,created_at`, (err,result)=>{
             if (err) {
                 res.status(500).json(err)
             }
@@ -44,7 +61,13 @@ router.get('/', (req, res)=>{
 });
 
 router.get('/totalago', (req, res)=>{
-  conn.query('SELECT pid,1000+SUM(CASE WHEN v.winner = pid THEN v.scoreWin ELSE 0 END)+SUM(CASE WHEN v.loser = pid THEN v.scoreLose ELSE 0 END) as totalScore FROM picture LEFT JOIN vote v ON (v.winner = pid OR v.loser = pid) WHERE DATE(voted_at) < DATE_SUB(NOW(),INTERVAL 1 DAY) GROUP BY picture.pid ORDER BY totalScore desc,created_at', (err,result)=>{
+  conn.query(`SELECT pid,
+                1000+SUM(CASE WHEN v.winner = pid THEN v.scoreWin ELSE 0 END)+SUM(CASE WHEN v.loser = pid THEN v.scoreLose ELSE 0 END) as totalScore 
+              FROM picture 
+              LEFT JOIN vote v ON (v.winner = pid OR v.loser = pid) 
+              WHERE DATE(voted_at) < DATE_SUB(NOW(),INTERVAL 1 DAY) 
+              GROUP BY picture.pid 
+              ORDER BY totalScore desc,created_at`, (err,result)=>{
       if (err) {
           res.status(500).json(err)
       }
