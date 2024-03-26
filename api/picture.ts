@@ -2,6 +2,7 @@ import express from "express";
 import mysql from "mysql";
 import { conn } from "../dbcon";
 import { PicturePostRequest } from "../model/pic_post_req";
+import { PicVotePostRequest } from "../model/picvote_post_req";
 
 export const router = express.Router();
 
@@ -58,6 +59,28 @@ router.get('/', (req, res)=>{
         })
     }
     
+});
+
+router.post('/picvote', (req, res)=>{
+  const rule: PicVotePostRequest = req.body;
+  conn.query(`SELECT user.name,
+                picture.*,
+                1000+SUM(CASE WHEN v.winner = pid THEN v.scoreWin ELSE 0 END)+SUM(CASE WHEN v.loser = pid THEN v.scoreLose ELSE 0 END) as totalScore 
+              FROM ((picture LEFT JOIN vote v ON (v.winner = pid OR v.loser = pid)) 
+              INNER JOIN user ON picture.user_id = user.uid)
+              WHERE pid NOT IN (SELECT pid 
+                                FROM picture 
+                                LEFT JOIN vote v ON (v.winner = pid OR v.loser = pid) 
+                                WHERE fgPrint = ?
+                                AND   voted_at > DATE_SUB(NOW(), INTERVAL ? SECOND))
+              GROUP BY picture.pid 
+              ORDER BY totalScore desc,created_at`,[rule.fgPrint,rule.cooldown], (err,result)=>{
+      if (err) {
+          res.status(500).json(err)
+      }else{
+        res.json(result)
+      }
+  })
 });
 
 router.get('/totalago', (req, res)=>{

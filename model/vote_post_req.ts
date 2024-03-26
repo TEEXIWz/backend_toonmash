@@ -4,5 +4,6 @@ export interface VotePostRequest {
     loser:     number;
     scoreWin:  number;
     scoreLose: number;
+    fgPrint:   string;
     voted_at:  string;
 }

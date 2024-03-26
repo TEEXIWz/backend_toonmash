@@ -89,7 +89,7 @@ router.get('/date', (req, res)=>{
                 SUM(CASE WHEN loser = pid THEN scoreLose ELSE 0 END) as scoreLose,
                 SUM(CASE WHEN winner = pid THEN scoreWin ELSE 0 END)+SUM(CASE WHEN loser = pid THEN scoreLose ELSE 0 END) as totalScore,
                 DATE(voted_at) as date
-            FROM picture 
+            FROM picture
             LEFT JOIN vote ON (winner = pid OR loser = pid) 
             WHERE pid = ? 
             AND voted_at BETWEEN DATE_SUB(NOW(),INTERVAL 6 DAY) 
@@ -126,14 +126,15 @@ router.get('/date', (req, res)=>{
 //     }
 // });
 
-router.post('/', async (req, res)=>{
+router.post('/', (req, res)=>{
     const vote : VotePostRequest = req.body
-    let sql = "INSERT INTO vote (winner, loser, scoreWin, scoreLose) VALUES (?,?,?,?)"
+    let sql = "INSERT INTO vote (winner, loser, scoreWin, scoreLose, fgPrint) VALUES (?,?,?,?,?)"
     sql = mysql.format(sql,[
         vote.winner,
         vote.loser,
         vote.scoreWin,
-        vote.scoreLose
+        vote.scoreLose,
+        vote.fgPrint
     ])
     conn.query(sql, (err,result)=>{
         if (err) {
@@ -143,3 +144,33 @@ router.post('/', async (req, res)=>{
         }
     })
 });
+
+router.get("/cd", (req, res) => {
+    conn.query(
+      "SELECT * FROM rule",
+      (err, result) => {
+        if (err) {
+          res.status(500).json(err);
+        }else{
+          res.status(200).json(result[0]);
+        }
+      }
+    );
+  });
+
+router.put("/cd/:cooldown", (req, res) => {
+    let cooldown = +req.params.cooldown;
+    conn.query(
+      "UPDATE rule SET cooldown = ? WHERE rid = 1",
+      [cooldown],
+      (err, result) => {
+        if (err) {
+          res.status(500).json(err);
+        }else{
+          res.status(200).json({
+            affected_row: result.affectedRows,
+          });
+        }
+      }
+    );
+  });
