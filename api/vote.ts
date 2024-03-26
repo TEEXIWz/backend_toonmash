@@ -60,13 +60,17 @@ router.get('/count', (req, res)=>{
 });
 
 router.get('/totalagos', (req, res)=>{
+    // let day = +req.params.day;
     if (req.query.id) {
         conn.query(`SELECT pid,
                         1000+SUM(CASE WHEN v.winner = pid THEN v.scoreWin ELSE 0 END)+SUM(CASE WHEN v.loser = pid THEN v.scoreLose ELSE 0 END) as totalScore 
                     FROM picture 
                     LEFT JOIN vote v ON (v.winner = pid OR v.loser = pid) 
                     WHERE pid = ? 
-                    AND DATE(voted_at) < DATE_SUB(NOW(),INTERVAL 6 DAY) 
+                    AND DATE(voted_at) <    (CASE WHEN DATEDIFF(NOW(),DATE(created_at)) >= 6 
+                                                THEN DATE_SUB(NOW(),INTERVAL 6 DAY) 
+                                                ELSE DATE_SUB(NOW(),INTERVAL DATEDIFF(NOW(),DATE(created_at)) DAY)
+                                            END) 
                     GROUP BY pid`,req.query.id, (err,result)=>{
             if (err) {
                 res.status(500).json(err)
@@ -93,7 +97,7 @@ router.get('/date', (req, res)=>{
             LEFT JOIN vote ON (winner = pid OR loser = pid) 
             WHERE pid = ? 
             AND voted_at BETWEEN DATE_SUB(NOW(),INTERVAL 6 DAY) 
-            AND NOW() 
+            AND NOW()
             GROUP BY DATE(voted_at) 
             ORDER BY DATE(voted_at)`,req.query.id, (err,result)=>{
             if (err) {
